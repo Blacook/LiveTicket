@@ -1,6 +1,7 @@
 """グラフ描画関連のモジュール"""
 
 import re
+from typing import Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,19 +23,23 @@ except Exception:
     )
 
 
-def plot_probability_comparison(results_list, case_names_list, stage_name_map=None):
-    """複数のシミュレーション結果をグループ化された棒グラフで比較して表示する。
+def plot_probability_comparison(
+    results_list: List[Dict[str, float]],
+    case_names_list: List[str],
+    stage_name_map: Optional[Dict[str, str]] = None,
+) -> None:
+    """複数のシミュレーション結果を積み上げ横棒グラフで比較して表示する。
 
-    各ケースの当選確率を並べて表示し、視覚的に比較できるようにします。
-    グラフのX軸には各選考ステージ、Y軸には確率（%）が表示されます。
+    各ケース（条件パターン）をY軸に、各選考ステージの確率を積み上げてX軸に表示します。
+    各積み上げ棒の合計は100%になります。
 
     Args:
         results_list (list of dict): 各ケースのfinal_probabilities辞書のリスト。
-            各辞書は {"ステージ名で当選": 確率, ...} の形式。
+            各辞書は {"ステージ名で当選": float, ...} の形式。
         case_names_list (list of str): 各ケースの名前のリスト。
             例: ["重複当選なし", "重複当選あり (新規枠10%減)"]
         stage_name_map (dict, optional): final_probabilitiesのキーとグラフ表示名のマッピング。
-            例: {"1次(CD+年会員)で当選": "1次", ...}
+            例: {"1次(CD+年会員)で当選": "1次", "全選考で落選": "全滅"}
 
     Returns:
         None: グラフを表示するのみで、戻り値はありません。
@@ -47,9 +52,12 @@ def plot_probability_comparison(results_list, case_names_list, stage_name_map=No
         print("描画データまたはケース名が不適切です。")
         return
 
-    sample_result = results_list[0]
+    # 1. Collect all unique stage keys from all results
+    all_stage_keys_set = set()
+    for res_dict in results_list:
+        all_stage_keys_set.update(res_dict.keys())
 
-    def get_sort_key(key_str):
+    def get_sort_key(key_str: str) -> Tuple[int, int, str]:
         match = re.match(r"(\d+)次", key_str)
         if match:
             return (0, int(match.group(1)), key_str)
@@ -57,40 +65,94 @@ def plot_probability_comparison(results_list, case_names_list, stage_name_map=No
             return (1, 0, key_str)
         return (2, 0, key_str)
 
-    sorted_dict_keys = sorted(sample_result.keys(), key=get_sort_key)
+    # 2. Sort these globally collected keys
+    globally_sorted_internal_keys = sorted(list(all_stage_keys_set), key=get_sort_key)
 
+    # 3. Generate display names based on these global keys
     if stage_name_map:
-        display_names_ordered = [
-            stage_name_map.get(k, k.replace("で当選", "")) for k in sorted_dict_keys
+        globally_display_names_ordered = [
+            stage_name_map.get(k, k.replace("で当選", ""))
+            for k in globally_sorted_internal_keys
         ]
-        internal_keys_ordered = (
-            sorted_dict_keys  # Use all keys from sample for data extraction
-        )
     else:
-        display_names_ordered = [k.replace("で当選", "") for k in sorted_dict_keys]
-        internal_keys_ordered = sorted_dict_keys
-
-    num_categories = len(display_names_ordered)
-    num_cases = len(results_list)
-    x = np.arange(num_categories)
-    width = 0.8 / num_cases
-
-    fig, ax = plt.subplots(figsize=(max(12, num_categories * num_cases * 0.5 + 2), 7))
-
-    for i, (case_results, case_name) in enumerate(zip(results_list, case_names_list)):
-        probabilities = [
-            case_results.get(internal_key, 0) * 100
-            for internal_key in internal_keys_ordered
+        globally_display_names_ordered = [
+            k.replace("で当選", "") for k in globally_sorted_internal_keys
         ]
-        bar_positions = x - (width * num_cases / 2) + (i * width) + (width / 2)
-        rects = ax.bar(bar_positions, probabilities, width, label=case_name)
-        ax.bar_label(rects, fmt="%.1f%%", padding=3, fontsize=8)
 
-    ax.set_ylabel("確率 (%)", fontsize=12)
-    ax.set_title("各選考ステージでの当選確率と比較", fontsize=14)
-    ax.set_xticks(x)
-    ax.set_xticklabels(display_names_ordered, rotation=30, ha="right", fontsize=10)
-    ax.legend(fontsize=10)
+    # This variable is not strictly necessary for the plot dimensions anymore,
+    # but represents the total number of unique stages.
+    num_unique_stages = len(globally_sorted_internal_keys)
+    num_cases = len(case_names_list)
+    y_positions = np.arange(num_cases)
+    bar_height = 0.6  # 各積み上げ棒の高さ
+
+    fig, ax = plt.subplots(
+        figsize=(12, max(6, num_cases * 0.8))
+    )  # ケース数に応じて高さを調整
+
+    # ステージごとの色を定義
+    prop_cycle = plt.rcParams["axes.prop_cycle"]
+    default_colors = prop_cycle.by_key()["color"]
+    stage_colors = {
+        key: default_colors[i % len(default_colors)]
+        for i, key in enumerate(
+            globally_sorted_internal_keys
+        )  # Use global keys for consistent coloring
+    }
+
+    for i, case_name in enumerate(case_names_list):
+        case_results = results_list[i]
+        left_offset = 0
+        for stage_idx, stage_key in enumerate(globally_sorted_internal_keys):
+            probability = case_results.get(stage_key, 0) * 100
+            display_name_for_legend = globally_display_names_ordered[stage_idx]
+
+            if probability > 0:  # 確率が0より大きい場合のみ描画
+                ax.barh(
+                    y_positions[i],
+                    probability,
+                    height=bar_height,
+                    left=left_offset,
+                    color=stage_colors[stage_key],
+                    label=display_name_for_legend,  # Always pass the label
+                    edgecolor="white",
+                )
+                # セグメント内にテキスト表示 (任意、見づらい場合は調整または削除)
+                if probability > 3:  # 小さすぎるセグメントにはテキストを表示しない
+                    ax.text(
+                        left_offset + probability / 2,
+                        y_positions[i],
+                        f"{probability:.1f}%",
+                        ha="center",
+                        va="center",
+                        color=(
+                            "white" if probability > 10 else "black"
+                        ),  # 背景色に応じて文字色変更
+                        fontsize=7,
+                    )
+            left_offset += probability
+
+    ax.set_xlabel("確率 (%)", fontsize=12)
+    ax.set_ylabel("シミュレーションケース", fontsize=12)
+    ax.set_title("各ケースにおける選考ステージ別当選確率の積み上げ", fontsize=14)
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(case_names_list, fontsize=10)
+    ax.set_xlim(0, 100)  # X軸の範囲を0-100%に固定
+
+    # 凡例の重複を削除して表示
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(
+        zip(labels, handles)
+    )  # collections.OrderedDict だとなお良いが、標準ライブラリで
+    ax.legend(
+        by_label.values(),
+        by_label.keys(),
+        title="選考ステージ",
+        bbox_to_anchor=(1.02, 1),
+        loc="upper left",
+        fontsize=9,
+    )
+
     ax.grid(axis="y", linestyle="--", alpha=0.7)
-    fig.tight_layout()
+    fig.tight_layout(rect=[0, 0, 0.85, 1])  # 凡例スペースを考慮
     plt.show()

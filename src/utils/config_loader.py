@@ -3,7 +3,7 @@
 import json
 
 
-def load_config(config_path="config.json"):
+def load_config(config_path: str = "config/config.json") -> dict:
     """設定ファイルを読み込む関数
 
     指定されたJSONファイルを読み込み、シミュレーションの設定を取得します。
@@ -23,12 +23,12 @@ def load_config(config_path="config.json"):
         return config
     except FileNotFoundError:
         print(f"エラー: 設定ファイル '{config_path}' が見つかりません")
-        return None
+        return {}
     except json.JSONDecodeError as e:
         print(f"エラー: 設定ファイル '{config_path}' のJSONフォーマットが不正です: {e}")
-        return None
+        return {}
     except Exception as e:
         print(
             f"エラー: 設定ファイル '{config_path}' の読み込み中に問題が発生しました: {e}"
         )
-        return None
+        return {}

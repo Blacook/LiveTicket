@@ -26,12 +26,12 @@ class LotterySimulator:
 
     def __init__(
         self,
-        total_overall_attendance,
-        num_total_events,
-        user_target_events_details,
-        core_fan_total_population,
-        duplicate_当選_config=None,
-    ):
+        total_overall_attendance: int,
+        num_total_events: int,
+        user_target_events_details: dict,
+        core_fan_total_population: int,
+        duplicate_当選_config: dict = {},
+    ) -> None:
         """LotterySimulatorクラスの初期化メソッド
 
         Args:
@@ -68,7 +68,13 @@ class LotterySimulator:
         self.results_per_stage_raw = []
         self.final_probabilities = {}
 
-    def add_stage(self, name, applicant_core_fan_ratio, additional_applicants, weight):
+    def add_stage(
+        self,
+        name: str,
+        applicant_core_fan_ratio: float,
+        additional_applicants: int,
+        weight: float,
+    ) -> None:
         """選考ステージを追加するメソッド
 
         Args:
@@ -98,7 +104,7 @@ class LotterySimulator:
         self.stages.append(stage)
         self.total_weight += weight
 
-    def _allocate_seats_to_stages(self):
+    def _allocate_seats_to_stages(self) -> None:
         """各選考ステージに座席を配分する内部メソッド
 
         各ステージの重みに基づいて座席を配分し、重複当選の設定がある場合は
@@ -135,7 +141,7 @@ class LotterySimulator:
                 stage.allocated_seats_original * (1 - reduction_rate)
             )
 
-    def calculate_probabilities(self):
+    def calculate_probabilities(self) -> dict:
         """各選考ステージの当選確率を計算するメソッド
 
         各ステージの申込者数、当選者数、条件付き当選確率を計算し、
@@ -194,7 +200,7 @@ class LotterySimulator:
 
         return self.final_probabilities
 
-    def display_results(self, display_details=False):
+    def display_results(self, display_details: bool = False) -> None:
         """シミュレーション結果を表示するメソッド
 
         計算された当選確率や各ステージの詳細情報をコンソールに表示します。
