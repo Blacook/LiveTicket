@@ -2,7 +2,7 @@
     "simulation_settings": {
         "total_overall_attendance": 550000,
         "num_total_events": 12,
-        "core_fan_total_population": 1000000
+        "core_fan_total_population": 1500000
     },
     "user_target_events_details": {
         "tokyo": 4,
@@ -29,15 +29,15 @@
             "weight": 3
         },
         {
-            "name": "4次(全+Ponta)",
+            "name": "4次(全会員+Ponta)",
             "applicant_core_fan_ratio": 1.0,
-            "additional_applicants": 500000,
+            "additional_applicants": 1000000,
             "weight": 2
         },
         {
             "name": "5次(任意)",
             "applicant_core_fan_ratio": 1.0,
-            "additional_applicants": 1000000,
+            "additional_applicants": 2000000,
             "weight": 1
         }
     ],

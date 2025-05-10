@@ -29,15 +29,25 @@ class TestPlotProbabilityComparison(unittest.TestCase):
             "ステージ2で当選": "S2",
             "全選考で落選": "Lose",
         }
+        # Configure mock_ax.get_legend_handles_labels to return a tuple of two lists
+        # This simulates that legend handles and labels were generated.
+        # The actual labels would depend on stage_map and the sorting in plotter.py
+        # For this test, we can use the values from stage_map directly.
+        expected_legend_labels = list(stage_map.values())
+        mock_ax.get_legend_handles_labels.return_value = ([MagicMock()] * len(expected_legend_labels), expected_legend_labels)
 
         plot_probability_comparison(results_list, case_names, stage_map)
 
         self.assertTrue(mock_subplots.called)
-        self.assertTrue(mock_ax.bar.called)
+        self.assertTrue(mock_ax.barh.called) # Changed from bar to barh
+        # Since barh is called for each segment of each case,
+        # we can check if it was called at least once.
+        self.assertGreaterEqual(mock_ax.barh.call_count, 1)
         self.assertTrue(mock_ax.set_ylabel.called)
+        self.assertTrue(mock_ax.set_xlabel.called) # Check for xlabel as well
         self.assertTrue(mock_ax.set_title.called)
-        self.assertTrue(mock_ax.set_xticks.called)
-        self.assertTrue(mock_ax.set_xticklabels.called)
+        self.assertTrue(mock_ax.set_yticks.called) # Check for yticks
+        self.assertTrue(mock_ax.set_yticklabels.called) # Check for yticklabels
         self.assertTrue(mock_ax.legend.called)
         self.assertTrue(mock_show.called)
 

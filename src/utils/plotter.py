@@ -52,7 +52,10 @@ def plot_probability_comparison(
         print("描画データまたはケース名が不適切です。")
         return
 
-    sample_result = results_list[0]
+    # 1. Collect all unique stage keys from all results
+    all_stage_keys_set = set()
+    for res_dict in results_list:
+        all_stage_keys_set.update(res_dict.keys())
 
     def get_sort_key(key_str: str) -> Tuple[int, int, str]:
         match = re.match(r"(\d+)次", key_str)
@@ -62,20 +65,23 @@ def plot_probability_comparison(
             return (1, 0, key_str)
         return (2, 0, key_str)
 
-    sorted_dict_keys = sorted(sample_result.keys(), key=get_sort_key)
+    # 2. Sort these globally collected keys
+    globally_sorted_internal_keys = sorted(list(all_stage_keys_set), key=get_sort_key)
 
+    # 3. Generate display names based on these global keys
     if stage_name_map:
-        display_names_ordered = [
-            stage_name_map.get(k, k.replace("で当選", "")) for k in sorted_dict_keys
+        globally_display_names_ordered = [
+            stage_name_map.get(k, k.replace("で当選", ""))
+            for k in globally_sorted_internal_keys
         ]
-        internal_keys_ordered = (
-            sorted_dict_keys  # Use all keys from sample for data extraction
-        )
     else:
-        display_names_ordered = [k.replace("で当選", "") for k in sorted_dict_keys]
-        internal_keys_ordered = sorted_dict_keys
+        globally_display_names_ordered = [
+            k.replace("で当選", "") for k in globally_sorted_internal_keys
+        ]
 
-    num_categories = len(display_names_ordered)
+    # This variable is not strictly necessary for the plot dimensions anymore,
+    # but represents the total number of unique stages.
+    num_unique_stages = len(globally_sorted_internal_keys)
     num_cases = len(case_names_list)
     y_positions = np.arange(num_cases)
     bar_height = 0.6  # 各積み上げ棒の高さ
@@ -89,15 +95,17 @@ def plot_probability_comparison(
     default_colors = prop_cycle.by_key()["color"]
     stage_colors = {
         key: default_colors[i % len(default_colors)]
-        for i, key in enumerate(internal_keys_ordered)
+        for i, key in enumerate(
+            globally_sorted_internal_keys
+        )  # Use global keys for consistent coloring
     }
 
     for i, case_name in enumerate(case_names_list):
         case_results = results_list[i]
         left_offset = 0
-        for stage_idx, stage_key in enumerate(internal_keys_ordered):
+        for stage_idx, stage_key in enumerate(globally_sorted_internal_keys):
             probability = case_results.get(stage_key, 0) * 100
-            display_name_for_legend = display_names_ordered[stage_idx]
+            display_name_for_legend = globally_display_names_ordered[stage_idx]
 
             if probability > 0:  # 確率が0より大きい場合のみ描画
                 ax.barh(
@@ -106,9 +114,7 @@ def plot_probability_comparison(
                     height=bar_height,
                     left=left_offset,
                     color=stage_colors[stage_key],
-                    label=(
-                        display_name_for_legend if i == 0 else None
-                    ),  # 凡例には最初のケースの分だけ追加
+                    label=display_name_for_legend,  # Always pass the label
                     edgecolor="white",
                 )
                 # セグメント内にテキスト表示 (任意、見づらい場合は調整または削除)

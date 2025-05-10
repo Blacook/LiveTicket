@@ -75,7 +75,9 @@ def main() -> None:
     ]
 
     stage_name_mapping_for_plot = {
-        f"{stage['name']}で当選": stage["name"].split("(")[0]
+        f"{stage['name']}で当選": stage[
+            "name"
+        ]  # Use the full stage name for the legend
         for stage in lottery_stages_config
     }
     stage_name_mapping_for_plot["全選考で落選"] = "全滅"

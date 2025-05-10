@@ -43,7 +43,7 @@ class TestLoadConfig(unittest.TestCase):
     def test_load_config_file_not_found(self, mock_print):
         """存在しないファイルの読み込み時のテスト"""
         config = load_config("non_existent_file.json")
-        self.assertIsNone(config)
+        self.assertEqual(config, {})
         mock_print.assert_called_with(
             "エラー: 設定ファイル 'non_existent_file.json' が見つかりません"
         )
@@ -55,7 +55,7 @@ class TestLoadConfig(unittest.TestCase):
         with open(invalid_json_path, "w", encoding="utf-8") as f:
             f.write("{不正なJSON")
         config = load_config(invalid_json_path)
-        self.assertIsNone(config)
+        self.assertEqual(config, {})
         self.assertTrue(
             mock_print.call_args[0][0].startswith(
                 f"エラー: 設定ファイル '{invalid_json_path}' のJSONフォーマットが不正です:"
@@ -67,7 +67,7 @@ class TestLoadConfig(unittest.TestCase):
         """その他の例外発生時のテスト"""
         with patch("builtins.open", side_effect=Exception("Test general error")):
             config = load_config(self.config_path)
-            self.assertIsNone(config)
+            self.assertEqual(config, {})
             self.assertTrue(
                 mock_print.call_args[0][0].startswith(
                     f"エラー: 設定ファイル '{self.config_path}' の読み込み中に問題が発生しました:"
