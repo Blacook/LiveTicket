@@ -20,7 +20,13 @@ class LotteryStage:
         conditional_win_prob_in_stage (float): このステージでの条件付き当選確率
     """
 
-    def __init__(self, name, applicant_core_fan_ratio, additional_applicants, weight):
+    def __init__(
+        self,
+        name: str,
+        applicant_core_fan_ratio: float,
+        additional_applicants: int,
+        weight: float,
+    ) -> None:
         """LotteryStageクラスの初期化メソッド
 
         Args:
