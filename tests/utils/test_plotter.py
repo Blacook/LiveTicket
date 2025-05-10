@@ -11,7 +11,9 @@ class TestPlotProbabilityComparison(unittest.TestCase):
 
     @patch("src.utils.plotter.plt.show")
     @patch("src.utils.plotter.plt.subplots")
-    def test_plot_probability_comparison(self, mock_subplots, mock_show):
+    def test_plot_probability_comparison(
+        self, mock_subplots: MagicMock, mock_show: MagicMock
+    ) -> None:
         """グラフ描画が正しく行われるかテスト"""
         mock_fig = MagicMock()
         mock_ax = MagicMock()
@@ -40,7 +42,9 @@ class TestPlotProbabilityComparison(unittest.TestCase):
         self.assertTrue(mock_show.called)
 
     @patch("builtins.print")
-    def test_plot_probability_comparison_invalid_input(self, mock_print):
+    def test_plot_probability_comparison_invalid_input(
+        self, mock_print: MagicMock
+    ) -> None:
         """不正な入力でのグラフ描画テスト"""
         plot_probability_comparison([], [])
         mock_print.assert_called_with("描画データまたはケース名が不適切です。")
