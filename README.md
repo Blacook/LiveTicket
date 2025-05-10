@@ -44,7 +44,7 @@ LiveTicket is a Python-based simulator designed to calculate and visualize the p
     ```
     Then install the required packages:
     ```bash
-    pip install matplotlib numpy
+    pip install -r requirements.txt
     ```
 
 ## Configuration
