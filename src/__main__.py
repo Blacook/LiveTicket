@@ -30,7 +30,6 @@ def run_and_collect_results(
     Returns:
         dict or None: 計算された当選確率の内訳。エラーが発生した場合はNone
     """
-    print(f"\n--- シミュレーション開始: {case_name} ---")
 
     try:
         simulator = LotterySimulator(
@@ -57,12 +56,36 @@ def run_and_collect_results(
 def main() -> None:
     """メイン処理"""
     config = load_config()  # config.jsonをデフォルトで読み込む
-    print(config)
+    if not config:
+        print("設定ファイルの読み込みに失敗しました。プログラムを終了します。")
+        return
 
     simulation_settings = config["simulation_settings"]
     user_target_events_details = config["user_target_events_details"]
     lottery_stages_config = config["lottery_stages_definition"]
     simulation_cases_config = config["simulation_cases_to_run"]
+
+    # 前提条件の表示
+    print("\n===== Simulation Settings =====")
+    total_attendance = simulation_settings.get("total_overall_attendance", 0)
+    num_events = simulation_settings.get("num_total_events", 1)  # 0除算を避ける
+    core_fan_population = simulation_settings.get("core_fan_total_population", 0)
+
+    print(f"全公演総動員数: {total_attendance:,} 人")
+    print(f"全公演数: {num_events} 公演")
+    if num_events > 0:
+        seats_per_event = total_attendance / num_events
+        print(f"1公演あたりの平均座席数: {seats_per_event:,.0f} 席")
+    else:
+        print("1公演あたりの平均座席数: 計算不可 (公演数が0)")
+    print(f"コアファン総人口: {core_fan_population:,} 人")
+
+    user_total_target_events = sum(user_target_events_details.values())
+    details_str = ", ".join(
+        [f"{region}: {count}" for region, count in user_target_events_details.items()]
+    )
+    print(f"ユーザーが申し込む公演数: {user_total_target_events} 公演 ({details_str})")
+    print("--------------------------")
 
     stages_definition_list = [
         (
@@ -89,7 +112,7 @@ def main() -> None:
         case_name = case_config["case_name"]
         duplicate_config = case_config["duplicate_config"]
 
-        print(f"\n--- シミュレーションケース: {case_name} ---")
+        print(f"\n===== Simulation Case: {case_name} =====")
         results = run_and_collect_results(
             simulation_settings,
             user_target_events_details,
